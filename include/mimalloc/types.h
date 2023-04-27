@@ -225,9 +225,9 @@ typedef struct mi_block_s {
 
 // The delayed flags are used for efficient multi-threaded free-ing
 typedef enum mi_delayed_e {
-  MI_USE_DELAYED_FREE   = 0, // push on the owning heap thread delayed list
+  MI_USE_DELAYED_FREE   = 0, // page is in full list and page is not on the owning heap thread delayed list
   //MI_DELAYED_FREEING  = 1, // temporary: another thread is accessing the owning heap
-  MI_NO_DELAYED_FREE    = 2, // optimize: push on page local thread free queue if another block is already in the heap thread delayed free list
+  MI_NO_DELAYED_FREE    = 2, // page is not in full list or optimize: push on page local thread free queue if another block is already in the heap thread delayed free list
   MI_NEVER_DELAYED_FREE = 3  // sticky, only resets on page reclaim
 } mi_delayed_t;
 

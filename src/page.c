@@ -340,6 +340,7 @@ static void mi_page_to_full(mi_page_t* page, mi_page_queue_t* pq) {
 
   if (mi_page_is_in_full(page)) return;
   mi_page_queue_enqueue_from(&mi_page_heap(page)->pages[MI_BIN_FULL], pq, page);
+  _mi_page_use_delayed_free(page, MI_USE_DELAYED_FREE, false);
   _mi_page_free_collect(page,false);  // try to collect right away in case another thread freed just before MI_USE_DELAYED_FREE was set
 }
 

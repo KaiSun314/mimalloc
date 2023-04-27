@@ -600,13 +600,6 @@ void _mi_free_delayed_block(mi_block_t* block) {
   mi_assert_internal(_mi_thread_id() == segment->thread_id);
   mi_page_t* const page = _mi_segment_page_of(segment, block);
 
-  // Clear the no-delayed flag so delayed freeing is used again for this page.
-  // This must be done before collecting the free lists on this page -- otherwise
-  // some blocks may end up in the page `thread_free` list with no blocks in the
-  // heap `thread_delayed_free` list which may cause the page to be never freed!
-  // (it would only be freed if we happen to scan it in `mi_page_queue_find_free_ex`)
-  _mi_page_use_delayed_free(page, MI_USE_DELAYED_FREE, false /* dont overwrite never delayed */);
-
   // collect all other non-local frees to ensure up-to-date `used` count
   _mi_page_free_collect(page, false);
 
