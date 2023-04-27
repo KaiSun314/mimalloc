@@ -155,11 +155,9 @@ void       _mi_page_unfull(mi_page_t* page);
 void       _mi_page_free(mi_page_t* page, mi_page_queue_t* pq, bool force);   // free the page
 void       _mi_page_abandon(mi_page_t* page, mi_page_queue_t* pq);            // abandon the page, to be picked up by another thread...
 void       _mi_heap_delayed_free_all(mi_heap_t* heap);
-bool       _mi_heap_delayed_free_partial(mi_heap_t* heap);
 void       _mi_heap_collect_retired(mi_heap_t* heap, bool force);
 
 void       _mi_page_use_delayed_free(mi_page_t* page, mi_delayed_t delay, bool override_never);
-bool       _mi_page_try_use_delayed_free(mi_page_t* page, mi_delayed_t delay, bool override_never);
 size_t     _mi_page_queue_append(mi_heap_t* heap, mi_page_queue_t* pq, mi_page_queue_t* append);
 void       _mi_deferred_free(mi_heap_t* heap, bool force);
 
@@ -188,7 +186,7 @@ void*       _mi_heap_malloc_zero(mi_heap_t* heap, size_t size, bool zero) mi_att
 void*       _mi_heap_malloc_zero_ex(mi_heap_t* heap, size_t size, bool zero, size_t huge_alignment) mi_attr_noexcept;     // called from `_mi_heap_malloc_aligned`
 void*       _mi_heap_realloc_zero(mi_heap_t* heap, void* p, size_t newsize, bool zero) mi_attr_noexcept;
 mi_block_t* _mi_page_ptr_unalign(const mi_segment_t* segment, const mi_page_t* page, const void* p);
-bool        _mi_free_delayed_block(mi_block_t* block);
+void        _mi_free_delayed_block(mi_block_t* block);
 void        _mi_free_generic(const mi_segment_t* segment, mi_page_t* page, bool is_local, void* p) mi_attr_noexcept;  // for runtime integration
 void        _mi_padding_shrink(const mi_page_t* page, const mi_block_t* block, const size_t min_size);
 
@@ -509,8 +507,12 @@ static inline mi_heap_t* mi_page_heap(const mi_page_t* page) {
 }
 
 static inline void mi_page_set_heap(mi_page_t* page, mi_heap_t* heap) {
-  mi_assert_internal(mi_page_thread_free_flag(page) != MI_DELAYED_FREEING);
+  // wait until any DELAYED_FREEING is finished. This ensures that only the new heap
+  // will be used for delayed free operations afterwards and the heap stays valid during
+  // the delayed free operations
+  pthread_mutex_lock(&page->mu_deferred_free);
   mi_atomic_store_release(&page->xheap,(uintptr_t)heap);
+  pthread_mutex_unlock(&page->mu_deferred_free);
 }
 
 // Thread free flag helpers

@@ -388,11 +388,11 @@ static void mi_heap_absorb(mi_heap_t* heap, mi_heap_t* from) {
   if (from==NULL || from->page_count == 0) return;
 
   // reduce the size of the delayed frees
-  _mi_heap_delayed_free_partial(from);
+  _mi_heap_delayed_free_all(from);
 
   // transfer all pages by appending the queues; this will set a new heap field
   // so threads may do delayed frees in either heap for a while.
-  // note: appending waits for each page to not be in the `MI_DELAYED_FREEING` state
+  // note: appending waits for each page to not be freeing delayed blocks,
   // so after this only the new heap will get delayed frees
   for (size_t i = 0; i <= MI_BIN_FULL; i++) {
     mi_page_queue_t* pq = &heap->pages[i];
